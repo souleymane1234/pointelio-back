@@ -1,7 +1,7 @@
 {
   "name": "theflow-nestjs-template",
   "version": "0.0.1",
-  "description": "TheFlow — Template API backend NestJS (Prisma, Redis, BullMQ, Socket.IO)",
+  "description": "TheFlow — Template API backend NestJS (Prisma, Socket.IO)",
   "author": "TheFlow - Ylias Gadie",
   "private": true,
   "license": "UNLICENSED",
@@ -35,7 +35,6 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@keyv/redis": "^5.1.6",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -49,15 +48,12 @@
     "@nestjs/websockets": "^11.0.1",
     "@prisma/adapter-mariadb": "^7.10.1",
     "@prisma/client": "^7.0.0",
-    "@socket.io/redis-adapter": "^8.3.0",
     "bcrypt": "^6.0.0",
-    "bullmq": "^5.79.2",
     "cache-manager": "^7.2.8",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cloudinary": "^2.9.0",
     "helmet": "^8.1.0",
-    "ioredis": "^5.9.2",
     "mariadb": "^3.5.4",
     "nodemailer": "^8.0.7",
     "reflect-metadata": "^0.2.2",

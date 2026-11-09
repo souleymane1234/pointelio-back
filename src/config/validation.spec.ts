@@ -6,7 +6,6 @@ const baseProd = {
   NODE_ENV: "production",
   DATABASE_URL: "postgres://db",
   JWT_SECRET: STRONG_SECRET,
-  REDIS_URL: "redis://cache",
 };
 
 describe("validateEnv", () => {
@@ -35,12 +34,8 @@ describe("validateEnv", () => {
     ).toThrow(/SOCKET_AUTH_ALLOW_PLAIN_USERID/);
   });
 
-  it("requires redis settings in production only", () => {
-    const { REDIS_URL: _redis, ...partial } = baseProd;
-    expect(() => validateEnv(partial)).toThrow(/REDIS_URL/);
-    expect(() =>
-      validateEnv({ ...partial, NODE_ENV: "development" }),
-    ).not.toThrow();
+  it("does not require Redis in production", () => {
+    expect(() => validateEnv(baseProd)).not.toThrow();
   });
 
   it("keeps debug flags allowed outside production", () => {

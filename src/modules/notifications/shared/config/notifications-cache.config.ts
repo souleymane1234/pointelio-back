@@ -4,7 +4,7 @@ import { createCacheNamespace } from "../../../../infra/cache/cache-namespace";
 export type NotificationsCacheSegment =
   "notifications-list" | "notification-detail";
 
-/** Cache Redis pour les notifications. Génération incrémentée après chaque écriture. */
+/** Cache mémoire pour les notifications. Génération incrémentée après chaque écriture. */
 const notificationsCache =
   createCacheNamespace<NotificationsCacheSegment>("notifications");
 

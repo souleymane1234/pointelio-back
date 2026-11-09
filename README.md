@@ -8,16 +8,14 @@
  \/   |_| |_|\___\/    |_|\___/ \_/\_/
 ```
 
-Socle backend NestJS prêt pour la production : authentification JWT (téléphone + PIN ou e-mail + mot de passe, sans SMS ni OTP), permissions fines backoffice, audit, notifications in-app / push / temps réel, e-mails, uploads, cache Redis, files BullMQ et crons multi-instance.
+Socle backend NestJS prêt pour la production : authentification JWT (téléphone + PIN ou e-mail + mot de passe, sans SMS ni OTP), permissions fines backoffice, audit, notifications in-app / push / temps réel, e-mails, uploads et cache en mémoire.
 
 Un module d'exemple (`src/examples`) montre la convention à suivre pour chaque nouveau domaine.
 
 ## Stack
 
 - **NestJS 11**, TypeScript
-- **Prisma 7** (adapter `pg`) sur PostgreSQL, schéma multi-fichiers
-- **Redis** (ioredis) : cache (Keyv), révocation JWT, throttling partagé, verrous de cron, adapter Socket.IO
-- **BullMQ** pour les traitements asynchrones
+- **Prisma 7** (adapter MariaDB) sur MySQL, schéma multi-fichiers
 - **Socket.IO** (namespace `/realtime`)
 - **Swagger** (thème sombre) sur `/api/v1/docs`
 - Intégrations optionnelles : **Cloudinary** (uploads), **Firebase** (push), **SMTP** (nodemailer)
@@ -27,7 +25,7 @@ Un module d'exemple (`src/examples`) montre la convention à suivre pour chaque 
 ```bash
 npm install
 cp .env.example .env          # puis renseigner JWT_SECRET (32 caractères min.)
-docker compose up -d          # PostgreSQL + Redis locaux
+docker compose up -d          # MySQL + Mailpit locaux
 npm run prisma:generate       # génère le client Prisma (requis avant seed / start)
 npm run prisma:migrate:deploy # applique la migration initiale
 npm run prisma:seed           # admin@app.local / ChangeMe123! + un utilisateur démo
@@ -40,16 +38,14 @@ Les versions des dépendances sont figées par `package-lock.json` : préférer 
 
 - API : http://localhost:5000/api/v1
 - Swagger : http://localhost:5000/api/v1/docs
-- Santé : `/api/v1/health/live` et `/api/v1/health/ready` (PostgreSQL + Redis)
+- Santé : `/api/v1/health/live` et `/api/v1/health/ready` (MySQL)
 
 Au démarrage, le terminal affiche la bannière TheFlow avec les URLs utiles (`src/common/banner/startup-banner.ts`). Les couleurs sont désactivées hors terminal interactif ou avec `NO_COLOR=1`.
-
-Sans `REDIS_URL`, l'application démarre quand même : cache en mémoire, jobs exécutés inline.
 
 ## Personnaliser le template pour un nouveau projet
 
 1. `package.json` : `name`, `description`.
-2. `src/common/constants/app.constants.ts` : `APP_NAME` (Swagger, bannière), `APP_BRAND` (signature de la bannière) et `REDIS_KEY_PREFIX` (isole les clés si plusieurs projets partagent un Redis).
+2. `src/common/constants/app.constants.ts` : `APP_NAME` (Swagger, bannière) et `CACHE_KEY_PREFIX`.
 3. `src/common/i18n/locales/*.json` : `emailBrandTitle`, `emailSignatureTeam`, textes de pied d'e-mail.
 4. `src/emailing/templates/brand.constants.ts` : palette des e-mails.
 5. `docker-compose.yml` : noms des conteneurs locaux.
@@ -68,12 +64,11 @@ Sans `REDIS_URL`, l'application démarre quand même : cache en mémoire, jobs e
 | `emailing` | Envoi SMTP, endpoint admin, layout HTML + template générique |
 | `annonces`, `newsletter` | Annonces avec suivi de lecture, inscriptions newsletter |
 | `common/uploads` | Upload Cloudinary (multipart et base64) |
-| `jobs` | Connexion BullMQ, `QueueProducer` / `QueueWorker`, `JobLockService` (cron une seule fois par créneau) |
-| `cache`, `redis` | Cache global, `createCacheNamespace`, vidage admin du cache |
+| `cache` | Cache mémoire global, `createCacheNamespace` |
 | `socket` | Gateway `/realtime` authentifiée par JWT |
 | `health` | Sondes liveness / readiness |
 
-Socle transversal (`src/common`) : format de réponse uniforme, filtre global d'exceptions, validation 422, i18n fr/en, Helmet, CORS, rate limiting (Redis optionnel), blocage d'IP, mode maintenance, contrôle de version mobile, profilage des requêtes.
+Socle transversal (`src/common`) : format de réponse uniforme, filtre global d'exceptions, validation 422, i18n fr/en, Helmet, CORS, rate limiting, blocage d'IP, mode maintenance, contrôle de version mobile, profilage des requêtes.
 
 ## Authentification
 
@@ -181,11 +176,6 @@ Le générateur utilise `src/examples` et `prisma/models/example.prisma` comme m
 
 Supprimer le module d'exemple : `src/examples`, `prisma/models/example.prisma`, la relation `examplesCreated` du modèle `User`, `EXAMPLES_PERMISSIONS`, les méthodes `example*` de `AuditActionsService`, les valeurs `EXAMPLE*` des enums d'audit et les clés i18n `example*`.
 
-## Jobs et crons
-
-- **Queue** : étendre `QueueProducer<T>` (avec `runInline` comme repli sans Redis) et `QueueWorker<T>`. Exemple : `src/examples/jobs/example-created.*`.
-- **Cron** : `@Cron(...)` + `jobLock.runOncePerSlot("nom", fn)` pour qu'une seule instance exécute chaque créneau. Exemple : `examples-cleanup.cron.ts`.
-
 ## Format des réponses
 
 ```json
@@ -234,7 +224,7 @@ const socket = io("http://localhost:5000/realtime", {
 socket.on("notifications.new", (notification) => console.log(notification));
 ```
 
-Chaque utilisateur rejoint la room `user:<id>` à la connexion. Avec `REDIS_URL`, les événements sont diffusés entre instances.
+Chaque utilisateur rejoint la room `user:<id>` à la connexion.
 
 ## Scripts
 
@@ -259,7 +249,7 @@ npm run artillery:load
 - **Railway** : `railway.toml` (migrations puis `npm run start`).
 - **CI** : `.gitlab-ci.yml` (validate Prisma, lint, typecheck, tests, build).
 
-En production, `src/config/validation.ts` refuse de démarrer sans `REDIS_URL`, avec un `JWT_SECRET` faible ou avec les options de debug (`SOCKET_AUTH_ALLOW_PLAIN_USERID`, `INVITATION_RETURN_TOKEN_IN_RESPONSE`).
+En production, `src/config/validation.ts` refuse de démarrer avec un `JWT_SECRET` faible ou avec les options de debug (`SOCKET_AUTH_ALLOW_PLAIN_USERID`, `INVITATION_RETURN_TOKEN_IN_RESPONSE`).
 
 ## License
 

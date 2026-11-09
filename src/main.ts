@@ -1,5 +1,4 @@
 import { ValidationPipe, UnprocessableEntityException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { json, urlencoded } from "express";
@@ -7,7 +6,6 @@ import type { Request, Response } from "express";
 import { setupSwagger } from "./common/swagger/setup-swagger";
 import { SWAGGER_PATH } from "./common/swagger/swagger-tags";
 import helmet from "helmet";
-import type Redis from "ioredis";
 import { AppModule } from "./app.module";
 import {
   createHealthHandlers,
@@ -15,13 +13,11 @@ import {
   HEALTH_READY_PATH,
 } from "./modules/health/health.handlers";
 import { PrismaService } from "./infra/prisma/prisma.service";
-import { REDIS_OTP } from "./infra/redis/redis-otp.constants";
 import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
 import { LoggingInterceptor } from "./common/interceptors/logging.interceptor";
 import { PaginatedResponseStatusInterceptor } from "./common/interceptors/paginated-response-status.interceptor";
 import { extractValidationMessages } from "./common/utils/validation.util";
 import { validationErrorResponse } from "./common/utils/response.util";
-import { RedisIoAdapter } from "./infra/socket/adapters/redis-io.adapter";
 import { printStartupBanner } from "./common/banner/startup-banner";
 
 const BASE64_UPLOAD_PATH = "/api/v1/uploads/content/base64";
@@ -33,24 +29,10 @@ async function bootstrap() {
 
   const health = createHealthHandlers({
     prisma: app.get(PrismaService),
-    redis: app.get<Redis | null>(REDIS_OTP, { strict: false }),
   });
   app.use(HEALTH_LIVE_PATH, health.live);
   app.use(HEALTH_READY_PATH, health.ready);
   process.once("SIGTERM", health.markShuttingDown);
-
-  const redisUrl = app.get(ConfigService).get<string>("REDIS_URL")?.trim();
-  if (redisUrl) {
-    const ioAdapter = new RedisIoAdapter(app);
-    try {
-      await ioAdapter.connectToRedis(redisUrl);
-      app.useWebSocketAdapter(ioAdapter);
-    } catch (error) {
-      console.error(
-        `[Socket.IO] Redis adapter unavailable, events stay local to this instance: ${String(error)}`,
-      );
-    }
-  }
 
   // Seul l'upload base64 transporte de gros fichiers (vidéo ≤ 50 Mo ≈ 70 Mo encodés).
   const jsonBodyLimit = process.env.HTTP_JSON_BODY_LIMIT || "1mb";

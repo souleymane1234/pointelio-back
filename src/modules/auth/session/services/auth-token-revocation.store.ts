@@ -1,34 +1,37 @@
 import { createHash } from "crypto";
-import { Inject, Injectable, Logger } from "@nestjs/common";
-import type Redis from "ioredis";
-import { REDIS_OTP } from "../../../../infra/redis/redis-otp.constants";
+import { Injectable } from "@nestjs/common";
 import { AUTH_REVOKED_TOKEN_KEY_PREFIX } from "../constants/auth-token-revocation.constants";
 
 @Injectable()
 export class AuthTokenRevocationStore {
-  private readonly logger = new Logger(AuthTokenRevocationStore.name);
-
-  constructor(@Inject(REDIS_OTP) private readonly redis: Redis | null) {
-    if (!this.redis) {
-      this.logger.warn(
-        "REDIS_URL absent : logout, désactivation et rotation des refresh tokens ne révoquent aucun JWT.",
-      );
-    }
-  }
+  private readonly entries = new Map<string, number>();
 
   private key(token: string): string {
     const hash = createHash("sha256").update(token).digest("hex");
     return `${AUTH_REVOKED_TOKEN_KEY_PREFIX}:${hash}`;
   }
 
+  private prune(now = Date.now()): void {
+    for (const [key, expiresAt] of this.entries) {
+      if (expiresAt <= now) this.entries.delete(key);
+    }
+  }
+
   async revoke(token: string, ttlSec: number): Promise<void> {
-    if (!this.redis || ttlSec <= 0) return;
-    await this.redis.set(this.key(token), "1", "EX", ttlSec);
+    if (ttlSec <= 0) return;
+    this.prune();
+    this.entries.set(this.key(token), Date.now() + ttlSec * 1000);
   }
 
   async isRevoked(token: string): Promise<boolean> {
-    if (!this.redis) return false;
-    return (await this.redis.exists(this.key(token))) === 1;
+    const now = Date.now();
+    const expiresAt = this.entries.get(this.key(token));
+    if (!expiresAt) return false;
+    if (expiresAt <= now) {
+      this.entries.delete(this.key(token));
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -36,14 +39,12 @@ export class AuthTokenRevocationStore {
    * `false` = déjà révoqué (rejeu ou requêtes concurrentes).
    */
   async consume(token: string, ttlSec: number): Promise<boolean> {
-    if (!this.redis) return true;
-    const result = await this.redis.set(
-      this.key(token),
-      "1",
-      "EX",
-      Math.max(ttlSec, 1),
-      "NX",
-    );
-    return result === "OK";
+    this.prune();
+    const key = this.key(token);
+    const now = Date.now();
+    const existing = this.entries.get(key);
+    if (existing && existing > now) return false;
+    this.entries.set(key, now + Math.max(ttlSec, 1) * 1000);
+    return true;
   }
 }

@@ -1,9 +1,9 @@
 import { createHash } from "crypto";
-import { REDIS_KEY_PREFIX } from "../../common/constants/app.constants";
+import { CACHE_KEY_PREFIX } from "../../common/constants/app.constants";
 
 const generationBumpers = new Set<() => void>();
 
-/** Incrémente les compteurs de génération en mémoire de tous les namespaces (après un vidage Redis). */
+/** Incrémente les compteurs de génération en mémoire de tous les namespaces. */
 export function bumpAllCacheGenerations(): void {
   for (const bump of generationBumpers) bump();
 }
@@ -30,7 +30,7 @@ export function createCacheNamespace<Segment extends string>(
   name: string,
   options: CacheNamespaceOptions = {},
 ): CacheNamespace<Segment> {
-  const prefix = `${REDIS_KEY_PREFIX}:${name}:v${options.version ?? 1}`;
+  const prefix = `${CACHE_KEY_PREFIX}:${name}:v${options.version ?? 1}`;
   const timeBucketMs = options.timeBucketMs ?? 0;
   let generation = 0;
 

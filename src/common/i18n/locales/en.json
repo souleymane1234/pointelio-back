@@ -24,8 +24,6 @@
   "emailAlreadyUsed": "This email address is already registered.",
   "emailAvailable": "This email address is available.",
   "phoneAlreadyUsed": "This phone number is already registered.",
-  "redisUnavailable": "Redis is unavailable. Please try again later.",
-  "redisCacheCleared": "Redis cache cleared successfully.",
   "requestBodyTooLarge": "The request body is too large.",
   "requestBodyInvalid": "The request body is invalid.",
   "phoneDialCodeRequired": "The phone number must include a valid country dial code (e.g. +33...).",

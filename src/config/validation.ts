@@ -12,7 +12,7 @@ const FORBIDDEN_IN_PRODUCTION = [
 ] as const;
 
 /** Ajouter ici les clés d'intégrations obligatoires en production (paiement, e-mail…). */
-const REQUIRED_IN_PRODUCTION = ["REDIS_URL"] as const;
+const REQUIRED_IN_PRODUCTION = [] as const;
 
 type RawEnv = Record<string, unknown>;
 

@@ -3,7 +3,7 @@ import { createCacheNamespace } from "../../../infra/cache/cache-namespace";
 
 export type AdminUsersCacheSegment = "admin-users-list" | "admin-user-detail";
 
-/** Cache Redis pour l’admin utilisateurs (liste, détail). Génération incrémentée après chaque écriture. */
+/** Cache mémoire pour l’admin utilisateurs (liste, détail). Génération incrémentée après chaque écriture. */
 const adminUsersCache =
   createCacheNamespace<AdminUsersCacheSegment>("admin-users");
 

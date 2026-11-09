@@ -1,5 +1,4 @@
 import type { Request, RequestHandler, Response } from "express";
-import type Redis from "ioredis";
 import type { PrismaService } from "../../infra/prisma/prisma.service";
 import { createHealthHandlers } from "./health.handlers";
 
@@ -30,29 +29,25 @@ async function callReady(handler: RequestHandler) {
 describe("health handlers", () => {
   const queryRaw = jest.fn();
   const prisma = { $queryRaw: queryRaw } as unknown as PrismaService;
-  const ping = jest.fn();
-  const redis = { ping } as unknown as Redis;
 
   beforeEach(() => jest.resetAllMocks());
 
-  it("is ready when database and redis respond", async () => {
+  it("is ready when the database responds", async () => {
     queryRaw.mockResolvedValue([{ "?column?": 1 }]);
-    ping.mockResolvedValue("PONG");
-    const { ready } = createHealthHandlers({ prisma, redis });
+    const { ready } = createHealthHandlers({ prisma });
 
     const res = await callReady(ready);
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({
       status: "ok",
-      checks: { database: "up", redis: "up" },
+      checks: { database: "up" },
     });
   });
 
   it("is not ready when the database is down", async () => {
     queryRaw.mockRejectedValue(new Error("connection refused"));
-    ping.mockResolvedValue("PONG");
-    const { ready } = createHealthHandlers({ prisma, redis });
+    const { ready } = createHealthHandlers({ prisma });
 
     const res = await callReady(ready);
 
@@ -62,8 +57,7 @@ describe("health handlers", () => {
 
   it("stops accepting traffic once shutdown starts", async () => {
     queryRaw.mockResolvedValue([]);
-    ping.mockResolvedValue("PONG");
-    const handlers = createHealthHandlers({ prisma, redis });
+    const handlers = createHealthHandlers({ prisma });
     handlers.markShuttingDown();
 
     const res = await callReady(handlers.ready);

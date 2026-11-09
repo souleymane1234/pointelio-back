@@ -2,7 +2,6 @@
 export const APP_NAME = "Pointellio API";
 
 /**
- * Préfixe des clés Redis écrites directement (verrous, révocations, cache).
- * À renommer pour isoler plusieurs projets partageant le même Redis.
+ * Préfixe des clés cache / révocation JWT en mémoire.
  */
-export const REDIS_KEY_PREFIX = "app";
+export const CACHE_KEY_PREFIX = "app";

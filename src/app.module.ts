@@ -9,25 +9,21 @@ import { validateEnv } from "./config/validation";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
-import Redis from "ioredis";
 import { MobileApiHeadersGuard } from "./common/guards/mobile-api-headers.guard";
 import { IpBlockModule } from "./common/ip-block/ip-block.module";
 import { MaintenanceMiddleware } from "./common/middleware/maintenance.middleware";
 import { RequestContextMiddleware } from "./common/middleware/request-context.middleware";
 import { VersionCheckMiddleware } from "./common/middleware/version-check.middleware";
-import { RedisThrottlerStorage } from "./common/throttler/redis-throttler-storage";
 import { PrismaModule } from "./infra/prisma/prisma.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { AppCacheModule } from "./infra/cache/cache.module";
 import { ProfileModule } from "./modules/profile/profile.module";
-import { RedisModule } from "./infra/redis/redis.module";
 import { UploadsModule } from "./infra/storage/uploads.module";
 import { UtilisateursModule } from "./modules/utilisateurs/utilisateurs.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { AuditModule } from "./modules/audit/audit.module";
 import { EmailingModule } from "./infra/mail/emailing.module";
 import { SocketModule } from "./infra/socket/socket.module";
-import { QueueModule } from "./infra/queue/queue.module";
 import { AbonnementsModule } from "./modules/abonnements/abonnements.module";
 import { EntitlementsModule } from "./modules/entitlements/entitlements.module";
 import { EntreprisesModule } from "./modules/entreprises/entreprises.module";
@@ -62,9 +58,6 @@ const perfProviders = perfProfilingEnabled()
       useFactory: (config: ConfigService) => {
         const disabled =
           config.get<string>("THROTTLE_ENABLED", "true") === "false";
-        const redisUrl = config.get<string>("REDIS_URL");
-        const enableRedisThrottler =
-          config.get<string>("THROTTLE_REDIS_ENABLED", "false") === "true";
         const ttlParsed = parseInt(
           config.get<string>("THROTTLE_TTL_MS", "60000"),
           10,
@@ -77,11 +70,6 @@ const perfProviders = perfProfilingEnabled()
         );
         const limit =
           Number.isFinite(limitParsed) && limitParsed >= 1 ? limitParsed : 100;
-
-        const storage =
-          enableRedisThrottler && redisUrl
-            ? new RedisThrottlerStorage(new Redis(redisUrl))
-            : undefined;
 
         return {
           throttlers: [{ name: "default", ttl, limit }],
@@ -102,15 +90,12 @@ const perfProviders = perfProfilingEnabled()
               url.includes("/api/v1/docs")
             );
           },
-          ...(storage ? { storage } : {}),
         };
       },
     }),
     ScheduleModule.forRoot(),
     PrismaModule,
     AppCacheModule,
-    RedisModule,
-    QueueModule,
     AuthModule,
     ProfileModule,
     UploadsModule,

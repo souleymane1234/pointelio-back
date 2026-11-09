@@ -24,8 +24,6 @@
   "emailAlreadyUsed": "Cette adresse e-mail est déjà utilisée.",
   "emailAvailable": "Cette adresse e-mail est disponible.",
   "phoneAlreadyUsed": "Ce numéro de téléphone est déjà utilisé.",
-  "redisUnavailable": "Redis indisponible. Réessayez plus tard.",
-  "redisCacheCleared": "Cache Redis vidé avec succès.",
   "requestBodyTooLarge": "Le contenu envoyé est trop volumineux.",
   "requestBodyInvalid": "Le contenu envoyé est invalide.",
   "phoneDialCodeRequired": "Le numéro doit inclure un indicatif pays valide (ex. +33...).",

@@ -1,5 +1,4 @@
 import type { Request, RequestHandler, Response } from "express";
-import type Redis from "ioredis";
 import type { PrismaService } from "../../infra/prisma/prisma.service";
 
 export const HEALTH_LIVE_PATH = "/api/v1/health/live";
@@ -7,11 +6,10 @@ export const HEALTH_READY_PATH = "/api/v1/health/ready";
 
 const CHECK_TIMEOUT_MS = 2_000;
 
-type CheckStatus = "up" | "down" | "skipped";
+type CheckStatus = "up" | "down";
 
 type HealthDependencies = {
   prisma: PrismaService;
-  redis: Redis | null;
 };
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -44,7 +42,7 @@ async function check(run: () => Promise<unknown>): Promise<CheckStatus> {
  * (JWT, en-têtes mobiles, throttle) et aux middlewares (maintenance, version),
  * pour que l'orchestrateur et le load balancer puissent toujours les appeler.
  */
-export function createHealthHandlers({ prisma, redis }: HealthDependencies): {
+export function createHealthHandlers({ prisma }: HealthDependencies): {
   live: RequestHandler;
   ready: RequestHandler;
   markShuttingDown: () => void;
@@ -64,17 +62,12 @@ export function createHealthHandlers({ prisma, redis }: HealthDependencies): {
         return;
       }
 
-      const [database, cache] = await Promise.all([
-        check(() => prisma.$queryRaw`SELECT 1`),
-        redis
-          ? check(() => redis.ping())
-          : Promise.resolve<CheckStatus>("skipped"),
-      ]);
-      const healthy = database === "up" && cache !== "down";
+      const database = await check(() => prisma.$queryRaw`SELECT 1`);
+      const healthy = database === "up";
 
       res.status(healthy ? 200 : 503).json({
         status: healthy ? "ok" : "error",
-        checks: { database, redis: cache },
+        checks: { database },
       });
     })();
   };
