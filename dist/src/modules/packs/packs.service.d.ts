@@ -1,0 +1,97 @@
+import { type Locale } from "../../common/i18n";
+import { PrismaService } from "../../infra/prisma/prisma.service";
+import { AuditActionsService } from "../audit/recorder/services/audit-actions.service";
+import type { CreatePackDto } from "./dto/create-pack.dto";
+import type { PacksQueryDto } from "./dto/packs-query.dto";
+import type { UpdatePackDto } from "./dto/update-pack.dto";
+export declare class PacksService {
+    private readonly prisma;
+    private readonly auditActions;
+    constructor(prisma: PrismaService, auditActions: AuditActionsService);
+    findAll(query: PacksQueryDto): Promise<{
+        data: {
+            modules: import("../../common/constants/pack-modules.constants").PackModule[];
+            entreprisesCount: number;
+            id: number;
+            nom: string;
+            createdAt: Date;
+            updatedAt: Date;
+            code: string;
+            prixMensuel: number;
+            description: string | null;
+            maxEmployes: number | null;
+            maxSites: number | null;
+            essaiJours: number;
+            ordre: number;
+            actif: boolean;
+        }[];
+        pagination: import("../../common/interfaces/response.interface").PaginationMeta;
+    }>;
+    findOne(id: number, locale: Locale): Promise<{
+        modules: import("../../common/constants/pack-modules.constants").PackModule[];
+        entreprisesCount: number;
+        id: number;
+        nom: string;
+        createdAt: Date;
+        updatedAt: Date;
+        code: string;
+        prixMensuel: number;
+        description: string | null;
+        maxEmployes: number | null;
+        maxSites: number | null;
+        essaiJours: number;
+        ordre: number;
+        actif: boolean;
+    }>;
+    create(acteurId: number, dto: CreatePackDto, locale: Locale): Promise<{
+        modules: import("../../common/constants/pack-modules.constants").PackModule[];
+        entreprisesCount: number;
+        id: number;
+        nom: string;
+        createdAt: Date;
+        updatedAt: Date;
+        code: string;
+        prixMensuel: number;
+        description: string | null;
+        maxEmployes: number | null;
+        maxSites: number | null;
+        essaiJours: number;
+        ordre: number;
+        actif: boolean;
+    }>;
+    update(acteurId: number, id: number, dto: UpdatePackDto, locale: Locale): Promise<{
+        modules: import("../../common/constants/pack-modules.constants").PackModule[];
+        entreprisesCount: number;
+        id: number;
+        nom: string;
+        createdAt: Date;
+        updatedAt: Date;
+        code: string;
+        prixMensuel: number;
+        description: string | null;
+        maxEmployes: number | null;
+        maxSites: number | null;
+        essaiJours: number;
+        ordre: number;
+        actif: boolean;
+    }>;
+    deactivate(acteurId: number, id: number, locale: Locale): Promise<{
+        modules: import("../../common/constants/pack-modules.constants").PackModule[];
+        entreprisesCount: number;
+        id: number;
+        nom: string;
+        createdAt: Date;
+        updatedAt: Date;
+        code: string;
+        prixMensuel: number;
+        description: string | null;
+        maxEmployes: number | null;
+        maxSites: number | null;
+        essaiJours: number;
+        ordre: number;
+        actif: boolean;
+    }>;
+    private assertCodeAvailable;
+    private audit;
+    private invalid;
+}

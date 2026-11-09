@@ -1,0 +1,21 @@
+config:
+  target: "{{ $env.ARTILLERY_BASE_URL }}"
+  processor: "../processors/auth.js"
+  http:
+    timeout: 30
+    extendedMetrics: true
+    defaults:
+      strictCapture: false
+      headers:
+        Accept: "application/json"
+        Content-Type: "application/json"
+        language: "{{ $env.LANGUAGE }}"
+  variables:
+    adminEmail: "{{ $env.ARTILLERY_ADMIN_EMAIL }}"
+    adminPassword: "{{ $env.ARTILLERY_ADMIN_PASSWORD }}"
+  plugins:
+    expect: {}
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+      stripQueryString: true
+      ignoreUnnamedRequests: true

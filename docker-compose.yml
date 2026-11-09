@@ -1,0 +1,51 @@
+# Infra locale pour `npm run start:dev` : MySQL + Redis + Mailpit.
+#   docker compose up -d
+# DATABASE_URL="mysql://root:root@localhost:3307/pointellio"
+# REDIS_URL="redis://localhost:6379"
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pointelio-mysql-local
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: pointellio
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: pointelio-redis-local
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: pointelio-mailpit-local
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  mysql_data:
+  redis_data:
